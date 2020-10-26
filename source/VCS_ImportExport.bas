@@ -1,4 +1,3 @@
-Attribute VB_Name = "VCS_ImportExport"
 Option Compare Database
 
 Option Explicit
@@ -423,7 +422,7 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     Dim obj_type_label As String
     Dim obj_type_num As Integer
     Dim obj_count As Integer
-    Dim FileName As String
+    Dim fileName As String
     Dim obj_name As String
     Dim ucs2 As Boolean
     
@@ -475,17 +474,17 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     End If
     
     obj_path = source_path & "queries\"
-    FileName = Dir$(obj_path & "*.bas")
+    fileName = Dir$(obj_path & "*.bas")
     
     Dim tempFilePath As String
     tempFilePath = VCS_File.VCS_TempFile()
     
-    If Len(FileName) > 0 And ImportQueries = True Then
+    If Len(fileName) > 0 And ImportQueries = True Then
         Debug.Print VCS_String.VCS_PadRight("Importing queries...", 24)
         obj_count = 0
-        Do Until Len(FileName) = 0
+        Do Until Len(fileName) = 0
             DoEvents
-            obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+            obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
             obj_name = Replace(obj_name, "%backslash%", "\")
             obj_name = Replace(obj_name, "%forwardslash%", "/")
             obj_name = Replace(obj_name, "%colon%", ":")
@@ -497,14 +496,14 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
             obj_name = Replace(obj_name, "%pipe%", "|")
             'Check for plain sql export/import
                         If HandleQueriesAsSQL Then
-                                VCS_Query.ImportQueryFromSQL obj_name, obj_path & FileName, False
+                                VCS_Query.ImportQueryFromSQL obj_name, obj_path & fileName, False
                         Else
-                                VCS_IE_Functions.VCS_ImportObject acQuery, obj_name, obj_path & FileName, VCS_File.VCS_UsingUcs2
+                                VCS_IE_Functions.VCS_ImportObject acQuery, obj_name, obj_path & fileName, VCS_File.VCS_UsingUcs2
                                 VCS_IE_Functions.VCS_ExportObject acQuery, obj_name, tempFilePath, VCS_File.VCS_UsingUcs2
                                 VCS_IE_Functions.VCS_ImportObject acQuery, obj_name, tempFilePath, VCS_File.VCS_UsingUcs2
                         End If
                         obj_count = obj_count + 1
-            FileName = Dir$()
+            fileName = Dir$()
         Loop
         Debug.Print "[" & obj_count & "]"
     End If
@@ -514,12 +513,12 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     If includeTables = True And ImportTables = True Then
     ' restore table definitions
         obj_path = source_path & "tbldef\"
-        FileName = Dir$(obj_path & "*.xml")
-        If Len(FileName) > 0 Then
+        fileName = Dir$(obj_path & "*.xml")
+        If Len(fileName) > 0 Then
             Debug.Print VCS_String.VCS_PadRight("Importing tabledefs...", 24);
             obj_count = 0
-            Do Until Len(FileName) = 0
-                obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+            Do Until Len(fileName) = 0
+                obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
                 If DebugOutput Then
                     If obj_count = 0 Then
                         Debug.Print
@@ -529,19 +528,19 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
                 End If
                 VCS_Table.VCS_ImportTableDef CStr(obj_name), obj_path
                 obj_count = obj_count + 1
-                FileName = Dir$()
+                fileName = Dir$()
             Loop
             Debug.Print "[" & obj_count & "]"
         End If
         
         
         ' restore linked tables - we must have access to the remote store to import these!
-        FileName = Dir$(obj_path & "*.LNKD")
-        If Len(FileName) > 0 Then
+        fileName = Dir$(obj_path & "*.LNKD")
+        If Len(fileName) > 0 Then
             Debug.Print VCS_String.VCS_PadRight("Importing Linked tabledefs...", 24);
             obj_count = 0
-            Do Until Len(FileName) = 0
-                obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+            Do Until Len(fileName) = 0
+                obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
                 If DebugOutput Then
                     If obj_count = 0 Then
                         Debug.Print
@@ -551,7 +550,7 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
                 End If
                 VCS_Table.VCS_ImportLinkedTable CStr(obj_name), obj_path
                 obj_count = obj_count + 1
-                FileName = Dir$()
+                fileName = Dir$()
             Loop
             Debug.Print "[" & obj_count & "]"
         End If
@@ -560,17 +559,17 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         
         ' NOW we may load data
         obj_path = source_path & "tables\"
-        FileName = Dir$(obj_path & "*.txt")
+        fileName = Dir$(obj_path & "*.txt")
     
-        If Len(FileName) > 0 Then
+        If Len(fileName) > 0 Then
             Debug.Print VCS_String.VCS_PadRight("Importing tables...", 24);
             obj_count = 0
-            Do Until Len(FileName) = 0
+            Do Until Len(fileName) = 0
                 DoEvents
-                obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+                obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
                 VCS_Table.VCS_ImportTableData CStr(obj_name), obj_path
                 obj_count = obj_count + 1
-                FileName = Dir$()
+                fileName = Dir$()
             Loop
             Debug.Print "[" & obj_count & "]"
         End If
@@ -581,17 +580,17 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     
     'load Data Macros - not DRY!
         obj_path = source_path & "tbldef\"
-        FileName = Dir$(obj_path & "*.dm")
-        If Len(FileName) > 0 Then
+        fileName = Dir$(obj_path & "*.dm")
+        If Len(fileName) > 0 Then
             Debug.Print VCS_String.VCS_PadRight("Importing Data Macros...", 24);
             obj_count = 0
-            Do Until Len(FileName) = 0
+            Do Until Len(fileName) = 0
                 DoEvents
-                obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+                obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
                 'VCS_Table.VCS_ImportTableData CStr(obj_name), obj_path
                 VCS_DataMacro.VCS_ImportDataMacros obj_name, obj_path
                 obj_count = obj_count + 1
-                FileName = Dir$()
+                fileName = Dir$()
             Loop
             Debug.Print "[" & obj_count & "]"
         End If
@@ -615,27 +614,27 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         obj_path = source_path & obj_type_label & "\"
         
             
-        FileName = Dir$(obj_path & "*.bas")
-        If Len(FileName) > 0 Then
+        fileName = Dir$(obj_path & "*.bas")
+        If Len(fileName) > 0 Then
             Debug.Print VCS_String.VCS_PadRight("Importing " & obj_type_label & "...", 24);
             obj_count = 0
-            Do Until Len(FileName) = 0
+            Do Until Len(fileName) = 0
                 ' DoEvents no good idea!
-                obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+                obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
                 If obj_type_label = "modules" Then
                     ucs2 = False
                 Else
                     ucs2 = VCS_File.VCS_UsingUcs2
                 End If
                 If IsNotVCS(obj_name) Then
-                    VCS_IE_Functions.VCS_ImportObject obj_type_num, obj_name, obj_path & FileName, ucs2
+                    VCS_IE_Functions.VCS_ImportObject obj_type_num, obj_name, obj_path & fileName, ucs2
                     obj_count = obj_count + 1
                 Else
                     If ArchiveMyself Then
                             MsgBox "Module " & obj_name & " could not be updated while running. Ensure latest version is included!", vbExclamation, "Warning"
                     End If
                 End If
-                FileName = Dir$()
+                fileName = Dir$()
             Loop
             Debug.Print "[" & obj_count & "]"
         
@@ -648,13 +647,13 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         obj_count = 0
         
         obj_path = source_path & "reports\"
-        FileName = Dir$(obj_path & "*.pv")
-        Do Until Len(FileName) = 0
+        fileName = Dir$(obj_path & "*.pv")
+        Do Until Len(fileName) = 0
             DoEvents
-            obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
-            VCS_Report.VCS_ImportPrintVars obj_name, obj_path & FileName
+            obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
+            VCS_Report.VCS_ImportPrintVars obj_name, obj_path & fileName
             obj_count = obj_count + 1
-            FileName = Dir$()
+            fileName = Dir$()
         Loop
         Debug.Print "[" & obj_count & "]"
     End If
@@ -664,12 +663,12 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         Debug.Print VCS_String.VCS_PadRight("Importing Relations...", 24);
         obj_count = 0
         obj_path = source_path & "relations\"
-        FileName = Dir$(obj_path & "*.txt")
-        Do Until Len(FileName) = 0
+        fileName = Dir$(obj_path & "*.txt")
+        Do Until Len(fileName) = 0
             DoEvents
-            VCS_Relation.VCS_ImportRelation obj_path & FileName
+            VCS_Relation.VCS_ImportRelation obj_path & fileName
             obj_count = obj_count + 1
-            FileName = Dir$()
+            fileName = Dir$()
         Loop
         Debug.Print "[" & obj_count & "]"
     End If
@@ -678,6 +677,7 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     ' clean up source path
     If editedOnly = True And FSO.FolderExists(source_path) = True Then
         FSO.DeleteFolder Left(source_path, Len(source_path) - 1)
+        VCS_GitOperations.SetLastImportedCommitToCurrent
     End If
     
     Debug.Print "Done."
@@ -851,8 +851,8 @@ Private Sub CloseFormsReports()
         DoCmd.Close acForm, Forms(0).name
         DoEvents
     Loop
-    Do While reports.Count > 0
-        DoCmd.Close acReport, reports(0).name
+    Do While Reports.Count > 0
+        DoCmd.Close acReport, Reports(0).name
         DoEvents
     Loop
     Exit Sub
@@ -909,10 +909,3 @@ Exit_Proc:
 Err_Handle:
     Resume Exit_Proc
 End Function
-
-
-
-
-
-
-

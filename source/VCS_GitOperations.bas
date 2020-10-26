@@ -1,4 +1,3 @@
-Attribute VB_Name = "VCS_GitOperations"
 Option Compare Database
 
 Option Explicit
@@ -9,7 +8,8 @@ Option Explicit
 ' 2) Source code is in the source\ directory.
 
 Private Const GetCommitDateCommand As String = "git show -s --format=%ci HEAD"
-Private Const GetImportedFilesCommand As String = " git diff --name-only access-vcs-last-imported-commit..HEAD"
+Private Const GetImportedFilesCommand As String = "git diff --name-only access-vcs-last-imported-commit..HEAD"
+Private Const SetTaggedCommitCommand As String = "git tag access-vcs-last-imported-commit HEAD -f"
 
 ' Return the datestamp of the current head commit
 Public Function GetCurrentCommitDate() As Date
@@ -68,3 +68,7 @@ Public Function GetSourceFilesSinceLastImport() As Collection
     
     Set GetSourceFilesSinceLastImport = SourceFilesCollection
 End Function
+
+Public Sub SetLastImportedCommitToCurrent()
+    ShellRun SetTaggedCommitCommand
+End Sub
