@@ -448,7 +448,8 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         Dim changedFiles As Collection
         Dim changedFile As Variant
         Dim changedFileName As String
-        Set changedFiles = VCS_GitOperations.GetSourceFilesSinceLastImport()
+        ' todo: remove files that are to be removed
+        Set changedFiles = VCS_GitOperations.GetSourceFilesSinceLastImport()(0)
         For Each changedFile In changedFiles
             Dim changedFileCopy As String
             changedFileCopy = Replace(changedFile, "source\", "")
@@ -615,8 +616,7 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         obj_type_split = Split(obj_type, "|")
         obj_type_label = obj_type_split(0)
         obj_type_num = Val(obj_type_split(1))
-        obj_path = source_path & obj_type_label & "\"
-        
+        obj_path = source_path & obj_type_label & "\"        
             
         fileName = Dir$(obj_path & "*.bas")
         If Len(fileName) > 0 Then

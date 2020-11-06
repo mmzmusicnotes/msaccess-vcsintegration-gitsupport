@@ -8,7 +8,9 @@ Option Explicit
 ' 2) Source code is in the source\ directory.
 
 Private Const GetCommitDateCommand As String = "git show -s --format=%ci HEAD"
-Private Const GetImportedFilesCommand As String = "git diff --name-only access-vcs-last-imported-commit..HEAD"
+Private Const GetCommittedFilesCommand As String = "git diff --name-status access-vcs-last-imported-commit..HEAD"
+Private Const GetAllChangedFilesCommand As String = "git diff --name-status access-vcs-last-imported-commit"
+Private Const GetUntrackedFilesCommand As String = "git ls-files . --exclude-standard --others"
 Private Const SetTaggedCommitCommand As String = "git tag access-vcs-last-imported-commit HEAD -f"
 
 ' Return the datestamp of the current head commit
@@ -45,28 +47,81 @@ Public Function ShellRun(sCmd As String) As String
 
 End Function
 
-' Returns a list of all the files imported between the current HEAD
+' Returns a collcetion containing two lists:
+' first, of all the objects to modify or re-import based on the state of the git repo
+' second, of all the objects to delete based on the same 
+' if getUncommittedFiles is false, files list is all files between the current HEAD
 ' and the commit carrying the last-imported-commit tag that are in the
-' /source directory. Note: Last entry in array will be empty.
-Public Function GetSourceFilesSinceLastImport() As Collection
+' /source directory. if it is true, file list includes any uncommitted changes
+' Note: Last entries in file arrays will be empty.
+Public Function GetSourceFilesSinceLastImport(getUncommittedFiles As Boolean) As Collection
     Dim FileListString As String
     Dim AllFilesArray As Variant
-    Dim SourceFilesCollection As Collection
-    Set SourceFilesCollection = New Collection
+    Dim SourceFilesToImportCollection As Collection
+    Dim SourceFilesToRemoveCollection As Collection
+    Set SourceFilesToImportCollection = New Collection
+    Set SourceFilesToRemoveCollection = New Collection
+    Dim ReturnCollection As Collection
+    Set ReturnCollection = New Collection
     Dim File As Variant
+    Dim CommandToRun As String
+
+    If getUncommittedFiles = True Then
+        CommandToRun = GetAllChangedFilesCommand
+    Else
+        CommandToRun = GetStagedFilesCommand
+    End If
     
-    
-    FileListString = ShellRun(GetImportedFilesCommand)
+    ' get files already committed (and staged, if flag passed)
+    FileListString = ShellRun(CommandToRun)
+
     AllFilesArray = Split(FileListString, vbLf)
-    
-    For Each File In AllFilesArray
+
+    ' sanitize paths, determine the operation type, and add to relevant collection
+    For Each FileStatus In AllFilesArray
+        Dim File As String
+        Dim Status As String
+        Dim FileStatusSplit As Variant
+        FileStatusSplit = Split(FileStatus, "       ") ' todo: better way of splitting? use different chars in git output?
+        Status = Left(FileStatusSplit(0), 1) ' only first character actually indicates status; the rest is "score"
+        File = FileStatusSplit(1)
+        
         If File <> "" And File Like "source/*" Then
             File = Replace(File, "/", "\")
-            SourceFilesCollection.Add File
+        End If
+
+        ' overwrite/add modified, copied, added
+        If Status = "M" Or Status = "A" Or Status = "U" Then
+            SourceFilesToImportCollection.Add File
+        End If
+
+        ' overwrite result of rename or copy
+        If Status = "R" Or Status = "C" Then
+            ' add the result to the collection of import files
+            SourceFilesToImportCollection = Replace(FileStatusSplit(3), "/", "\")
+        End If
+
+        ' remove deleted objects and original renamed files
+        If Status = "D" Or Status = "R" Then
+            SourceFilesToRemoveCollection.Add File
         End If
     Next
-    
-    Set GetSourceFilesSinceLastImport = SourceFilesCollection
+
+    ' get and add untracked files
+    If getUncommittedFiles = True Then
+        FileListString = ShellRun(GetUntrackedFilesCommand)
+        For Each File In FileListString
+            If File <> "" And File Like "source/*" Then
+                File = Replace(File, "/", "\")
+            End If
+            SourceFilesToImportCollection.Add File
+        Next
+    End If
+
+    ReturnCollection.Add SourceFilesToImportCollection
+    ReturnCollection.Add SourceFilesToRemoveCollection
+
+    Set GetSourceFilesSinceLastImport = ReturnCollection
 End Function
 
 Public Sub SetLastImportedCommitToCurrent()
