@@ -606,6 +606,10 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     If ImportMacros = True Then importObjectsString = importObjectsString & "macros|" & acReport & ","
     If ImportModules = True Then importObjectsString = importObjectsString & "modules|" & acModule
     
+    If Right(importObjectsString, 1) = "," Then
+        importObjectsString = Left(importObjectsString, Len(importObjectsString) - 1)
+    End If
+
     For Each obj_type In Split(importObjectsString, ",")
     
         obj_type_split = Split(obj_type, "|")
