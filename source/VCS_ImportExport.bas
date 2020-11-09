@@ -41,35 +41,6 @@ Private Function IsNotVCS(ByVal moduleName As String) As Boolean
 
 End Function
 
-' Get the correct Modified Date of the passed object.  MSysObjects and DAO are not accurate for all object types.
-' See StackOverflow #57103395. This is done because LastUpdated is not reliable.
-' Based on a tip from Philipp Stiefel <https://codekabinett.com>
-' Getting the last modified date with this line of code does indeed return incorrect results.
-'   ? CurrentDb.Containers("Forms").Documents("Form1").LastUpdated
-'
-' But, that is not what we use to receive the last modified date, except for queries, where the above line is working correctly.
-' What we use instead is:
-'   ? CurrentProject.AllForms("Form1").DateModified
-' LastUpdated is accurate for queries, tables, and relations only. See:
-'   https://support.microsoft.com/hr-hr/help/299554 (yes, it's only available in Hungarian)
-Public Function GetObjectModifiedDate(objectName As String, objectType As String) As Variant
-    Select Case objectType
-        Case "forms"
-            GetObjectModifiedDate = CurrentProject.AllForms(objectName).DateModified
-        Case "reports"
-            GetObjectModifiedDate = CurrentProject.AllReports(objectName).DateModified
-        Case "macros"
-            GetObjectModifiedDate = CurrentProject.AllMacros(objectName).DateModified
-        Case "modules"
-            ' This will report the date that *ANY* module was last saved.
-            ' The CurrentDb.Containers method and MSysObjects will report the date created.
-            GetObjectModifiedDate = CurrentProject.AllModules(objectName).DateModified
-        Case Else
-            ' Do nothing.  Return Null.
-    End Select
-End Function
-
-
 ' Main entry point for EXPORT. Export all forms, reports, queries,
 ' macros, modules, and lookup tables to `source` folder under the
 ' database's folder.
@@ -179,7 +150,7 @@ Public Sub ExportSource(ByVal ExportReports As Boolean, ByVal ExportQueries As B
                                 ' how modules' DateModified flag is set - but this is OK,
                                 ' as modules are generally the fastest to export
                                 skipObjectNotEditedAfterCommit = editedOnly And _
-                                    CurrentCommitDate > GetObjectModifiedDate(doc.name, obj_type_label)
+                                    CurrentCommitDate > VCS_IE_Functions.GetObjectModifiedDate(doc.name, obj_type_label)
                                 If (Left$(doc.name, 1) <> "~") And _
                                    (IsNotVCS(doc.name) Or ArchiveMyself) And _
                                    skipObjectNotEditedAfterCommit = False Then
@@ -447,11 +418,24 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
         source_path = VCS_Dir.VCS_ProjectPath() & "changes-only-source\"
         VCS_Dir.ClearAndMakeTemporaryChangesDirectory source_path
         Dim changedFiles As Collection
+        Dim removedFiles As Collection
+        Dim allFiles as Variant
         Dim changedFile As Variant
+        Dim removedFile As Variant
         Dim changedFileName As String
         ' todo: remove files that are to be removed
         ' todo: make unstaged/uncommitted changes optional
-        Set changedFiles = VCS_GitOperations.GetSourceFilesSinceLastImport(True)(0)
+        allFiles = VCS_GitOperations.GetSourceFilesSinceLastImport(True)
+        Set changedFiles = allFiles(0)
+        Set removedFiles = allFiles(1)
+
+        For Each removedFile In removedFiles
+            ' get the object type
+            Dim removedFileParts As Variant
+            removedFileParts = Split(removedFile, "\") ' expecting source\objecttype\objectname.bas
+            VCS_IE_Functions.DeleteObject FSO.GetBaseName(removedFileParts(2)), removedFileParts(1)
+        Next
+
         For Each changedFile In changedFiles
             Dim changedFileCopy As String
             changedFileCopy = Replace(changedFile, "source\", "")

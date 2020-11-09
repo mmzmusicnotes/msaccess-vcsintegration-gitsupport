@@ -16,6 +16,60 @@ Private Const StripPublishOption As Boolean = True
 Public Const ForReading = 1, ForWriting = 2, ForAppending = 8
 Public Const TristateTrue = -1, TristateFalse = 0, TristateUseDefault = -2
 
+' Deletes an object of a given type
+Public Function DeleteObject(objectName as String, objectType as String) As Variant
+    Dim accessObjectType As AcObjectType
+    Select Case objectType
+        Case "forms"
+            accessObjectType = acForm
+        Case "reports"
+            accessObjectType = acReport
+        Case "macros"
+            accessObjectType = acMacro
+        Case "modules"
+            accessObjectType = acModule
+        Case "queries"
+            accessObjectType = acQuery
+        ' todo: are these the correct object types for relations and tbldef?
+        Case "relations"
+            accessObjectType = acTable
+        Case "tables"
+            accessObjectType = acTable
+        Case "tbldef"
+            accessObjectType = acTable
+        Case Else
+            Exit Function
+    End Select
+    DoCmd.DeleteObject accessObjectType, objectName
+End Function
+
+' Get the correct Modified Date of the passed object.  MSysObjects and DAO are not accurate for all object types.
+' See StackOverflow #57103395. This is done because LastUpdated is not reliable.
+' Based on a tip from Philipp Stiefel <https://codekabinett.com>
+' Getting the last modified date with this line of code does indeed return incorrect results.
+'   ? CurrentDb.Containers("Forms").Documents("Form1").LastUpdated
+'
+' But, that is not what we use to receive the last modified date, except for queries, where the above line is working correctly.
+' What we use instead is:
+'   ? CurrentProject.AllForms("Form1").DateModified
+' LastUpdated is accurate for queries, tables, and relations only. See:
+'   https://support.microsoft.com/hr-hr/help/299554 (yes, it's only available in Hungarian)
+Public Function GetObjectModifiedDate(ByVal objectName As String, ByVal objectType As String) As Variant
+    Select Case objectType
+        Case "forms"
+            GetObjectModifiedDate = CurrentProject.AllForms(objectName).DateModified
+        Case "reports"
+            GetObjectModifiedDate = CurrentProject.AllReports(objectName).DateModified
+        Case "macros"
+            GetObjectModifiedDate = CurrentProject.AllMacros(objectName).DateModified
+        Case "modules"
+            ' This will report the date that *ANY* module was last saved.
+            ' The CurrentDb.Containers method and MSysObjects will report the date created.
+            GetObjectModifiedDate = CurrentProject.AllModules(objectName).DateModified
+        Case Else
+            ' Do nothing.  Return Null.
+    End Select
+End Function
 
 ' Can we export without closing the form?
 
