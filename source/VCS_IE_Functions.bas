@@ -17,7 +17,7 @@ Public Const ForReading = 1, ForWriting = 2, ForAppending = 8
 Public Const TristateTrue = -1, TristateFalse = 0, TristateUseDefault = -2
 
 ' Deletes an object of a given type
-Public Function DeleteObject(objectName as String, objectType as String) As Variant
+Public Function DeleteObject(ByVal objectName As String, ByVal objectType As String) As Variant
     Dim accessObjectType As AcObjectType
     Select Case objectType
         Case "forms"
@@ -40,7 +40,14 @@ Public Function DeleteObject(objectName as String, objectType as String) As Vari
         Case Else
             Exit Function
     End Select
+    
+    On Error GoTo ErrorHandler
     DoCmd.DeleteObject accessObjectType, objectName
+    Exit Function
+    
+ErrorHandler:
+    Debug.Print "Could not delete " & objectType & " " & objectName & ": Error " & Err.Number _
+        & "( " & Err.Description & ") occurred."
 End Function
 
 ' Get the correct Modified Date of the passed object.  MSysObjects and DAO are not accurate for all object types.
@@ -151,16 +158,16 @@ Public Sub VCS_SanitizeTextFiles(ByVal Path As String, ByVal Ext As String, Opti
     srchPattern = srchPattern & ")"
 'Debug.Print srchPattern
     rxLine.Pattern = srchPattern
-    Dim FileName As String
-    FileName = Dir$(Path & "*." & Ext)
+    Dim fileName As String
+    fileName = Dir$(Path & "*." & Ext)
     Dim isReport As Boolean
     isReport = False
     
-    Do Until Len(FileName) = 0
+    Do Until Len(fileName) = 0
         DoEvents
         
         Dim obj_name As String
-        obj_name = Mid$(FileName, 1, InStrRev(FileName, ".") - 1)
+        obj_name = Mid$(fileName, 1, InStrRev(fileName, ".") - 1)
         
         Dim CurrentFile As File
         Set CurrentFile = FSO.GetFile(Path & obj_name & "." & Ext)
@@ -234,7 +241,7 @@ Public Sub VCS_SanitizeTextFiles(ByVal Path As String, ByVal Ext As String, Opti
         OutFile.Close
         InFile.Close
 
-        FSO.DeleteFile (Path & FileName)
+        FSO.DeleteFile (Path & fileName)
 
         Dim thisFile As Object
         Set thisFile = FSO.GetFile(Path & obj_name & ".sanitize")
@@ -243,10 +250,10 @@ Public Sub VCS_SanitizeTextFiles(ByVal Path As String, ByVal Ext As String, Opti
         ' or anything else touching the file.
         Dim ErrCounter As Integer
         On Error GoTo ErrorHandler
-        thisFile.Move (Path & FileName)
+        thisFile.Move (Path & fileName)
 
 ContinueLenFileName:
-        FileName = Dir$()
+        fileName = Dir$()
     Loop
     
     Exit Sub
@@ -268,4 +275,5 @@ ErrorHandler:
     End Select
     Resume Next
 End Sub
+
 
