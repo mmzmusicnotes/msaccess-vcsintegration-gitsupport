@@ -589,8 +589,8 @@ Public Sub ImportSource(ByVal ImportReports As Boolean, ByVal ImportQueries As B
     importObjectsString = ""
     
     If ImportForms = True Then importObjectsString = importObjectsString & "forms|" & acForm & ","
-    If ImportReports = True Then importObjectsString = importObjectsString & "reports|" & acForm & ","
-    If ImportMacros = True Then importObjectsString = importObjectsString & "macros|" & acReport & ","
+    If ImportReports = True Then importObjectsString = importObjectsString & "reports|" & acReport & ","
+    If ImportMacros = True Then importObjectsString = importObjectsString & "macros|" & acMacro & ","
     If ImportModules = True Then importObjectsString = importObjectsString & "modules|" & acModule
     
     If Right(importObjectsString, 1) = "," Then

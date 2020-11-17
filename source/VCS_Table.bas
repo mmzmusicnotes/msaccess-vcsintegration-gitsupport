@@ -256,7 +256,7 @@ err_notable_fin:
     GoTo Err_CreateLinkedTable_Fin
     
 Err_CreateLinkedTable:
-    MsgBox Err.Description, vbCritical, "ERROR: IMPORT LINKED TABLE"
+    Debug.Print "Cannot import linked table: " & tblName & " from " & obj_path & ": " & Err.Description & " (" & Err.Number & ")"
     Resume Err_CreateLinkedTable_Fin
     
 Err_CreateLinkedTable_Fin:
